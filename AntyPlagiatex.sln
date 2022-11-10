@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32811.315
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AntyPlagiatex", "AntyPlagiatex\AntyPlagiatex.csproj", "{E9A175EF-262C-4120-A97E-2291A98351B8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E9A175EF-262C-4120-A97E-2291A98351B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9A175EF-262C-4120-A97E-2291A98351B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9A175EF-262C-4120-A97E-2291A98351B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9A175EF-262C-4120-A97E-2291A98351B8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C22ED413-0334-4322-A1C8-76CE177F2ABF}
+	EndGlobalSection
+EndGlobal
