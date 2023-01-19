@@ -1,8 +1,241 @@
 ﻿@page "/fileupload"
+@using System
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
+@using Microsoft.Extensions.Logging
+@using DocumentFormat.OpenXml.Packaging
+@using DocumentFormat.OpenXml.Wordprocessing
+@using System.Text;
+@using System.Net;
+@inject HttpClient Http
+@inject IJSRuntime JS
 
-<form action="upload.php" method="POST">
-    <input type="file" multiple>
-    <p>Upuść tutaj plik lub kliknij aby wybrać</p>
-    <button type="submit">Załaduj</button>
-</form>
 
+<InputFile OnChange="@LoadFiles" multiple />
+
+@*<button @onclick="DownloadFileFromStream">Download File From Stream</button>*@
+
+
+@if (isLoading)
+{
+    <p>Uploading...</p>
+}
+else
+{
+    <ul>
+        @foreach (var file in loadedFiles)
+        {
+            <li>
+                <ul>
+                    <li>Name: @file.Name</li>
+                    <li>Last modified: @file.LastModified.ToString()</li>
+                    <li>Size (bytes): @file.Size</li>
+                    <li>Content type: @file.ContentType</li>
+                </ul>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+
+
+    private List<IBrowserFile> loadedFiles = new();
+    private bool isLoading;
+    string rootpath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Antyplagiatex.doc");
+    //string rootpath = System.IO.Directory.GetCurrentDirectory();
+
+    public string HTMLcode = "testHTML";
+    public string odpowiedz = "testODP";
+    public string tekst = "testTEKST";
+    public Rootobject jsonAPI;
+    public FileStream fs;
+
+    private async Task LoadFiles(InputFileChangeEventArgs e)
+    {
+        isLoading = true;
+        loadedFiles.Clear();
+        String str = "test";
+
+        int z1 = 0;
+        int z2 = 0;
+
+        await using FileStream fs = new(rootpath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+        await e.GetMultipleFiles().FirstOrDefault().OpenReadStream().CopyToAsync(fs);
+
+        using (WordprocessingDocument document = WordprocessingDocument.Open(fs, false))
+        {
+            document.SaveAs("Anty.docx");
+        }
+
+
+        isLoading = false;
+        try{
+            using (WordprocessingDocument document = WordprocessingDocument.Open("Anty.docx", true))
+            {
+                Body body = document.MainDocumentPart.Document.Descendants<Body>().First();
+                Comments comments = null;
+                string id = "0";
+
+                if (document.MainDocumentPart.GetPartsCountOfType<WordprocessingCommentsPart>() > 0)
+                {
+                    comments =document.MainDocumentPart.WordprocessingCommentsPart.Comments;
+                    if (comments.HasChildren)
+                    {
+                        id = (comments.Descendants<Comment>().Select(e => int.Parse(e.Id.Value)).Max() + 1).ToString();
+                    }
+                }
+                else
+                {
+                    WordprocessingCommentsPart commentPart =document.MainDocumentPart.AddNewPart<WordprocessingCommentsPart>();
+                    commentPart.Comments = new Comments();
+                    comments = commentPart.Comments;
+                }
+                int paraIndex = 0;
+                foreach (Paragraph paragraph in body.Descendants<Paragraph>())
+                {
+
+                    String innerText = paragraph.InnerText;
+                    paragraph.RemoveAllChildren<Run>();
+
+                    z1 = 0;
+                    int runIndex = 0; //<<<<<<<<<<<<<<<<<<<<który element
+                    foreach (String i in innerText.Split("."))
+                    {
+
+                        paragraph.AppendChild(new Run(new Text(i + "."+" ")));
+                        runIndex++;
+                        z2 = 0;
+
+                        JsonWynik jsonWynik = new JsonWynik();
+                        jsonWynik.zdanie = new JsonZdanie[paragraph.InnerText.Split(".").Count()];
+                        jsonWynik.zdanie[z1] = new JsonZdanie();
+                        jsonWynik.zdanie[z1].items = new JsonDane[10];
+                        jsonWynik.zdanie[z1].tekst = i;
+                        String zdanie = i;
+                        if (zdanie.Count() > 10)
+                        {
+                            odpowiedz = await Http.GetStringAsync("https://customsearch.googleapis.com/customsearch/v1?cx=1726a2f7ed7c047a2&key=AIzaSyBZMpXzEDUikniwj6TiRqvPJUtXUmCrYKc&q=" + zdanie);
+                            jsonAPI = System.Text.Json.JsonSerializer.Deserialize<Rootobject>(odpowiedz);
+
+                            foreach (var zApi in jsonAPI.items)
+                            {
+                                jsonWynik.zdanie[z1].items[z2] = new JsonDane();
+                                jsonWynik.zdanie[z1].items[z2].title = zApi.title;
+                                jsonWynik.zdanie[z1].items[z2].link = zApi.link;
+                                jsonWynik.zdanie[z1].items[z2].snippet = zApi.snippet;
+                                jsonWynik.zdanie[z1].items[z2].test1 = Test1(zApi.snippet, zdanie);
+                                //jsonWynik.zdanie[z1].items[z2].test2 = Test2(zApi.link, zdanie);
+                                z2++;
+                                if (jsonWynik.zdanie[z1].items[z2 - 1].test1 == 1)
+                                {
+                                    Paragraph comtext = new Paragraph(new Run(new Text(jsonWynik.zdanie[z1].tekst +" : "+ jsonWynik.zdanie[z1].items[z2-1].link)));
+                                    Comment cmt = new Comment()
+                                        {
+                                            Id = id,
+                                            Author = "Antyplagiatex",
+                                            Initials = "AP",
+                                            Date = DateTime.Now
+                                        };
+                                    cmt.AppendChild(comtext);
+                                    comments.AppendChild(cmt);
+                                    comments.Save();
+
+
+                                    paragraph.InsertBefore(new CommentRangeStart() { Id = id }, paragraph.Elements<Run>().ElementAt(runIndex-1));
+                                    var cmtEnd = paragraph.InsertAfter(new CommentRangeEnd() { Id = id }, paragraph.Elements<Run>().ElementAt(runIndex-1));
+                                    paragraph.InsertAfter(new Run(new CommentReference() { Id = id }), cmtEnd);
+                                    runIndex++;
+
+                                    comments = document.MainDocumentPart.WordprocessingCommentsPart.Comments;
+                                    if (comments.HasChildren)
+                                    {
+                                        id = (comments.Descendants<Comment>().Select(e => int.Parse(e.Id.Value)).Max() + 1).ToString();
+                                    }
+                                    //fix stop
+                                    break;
+                                }
+                            }
+                            z1++;
+
+                        }
+
+                    }//foreach run
+                    paraIndex++;
+                }//foreach paragragraphs
+
+
+                document.Save();
+            }//using
+
+            var fileStream = GetFileStream();
+
+            using var streamRef = new DotNetStreamReference(stream: fileStream);
+
+            await JS.InvokeVoidAsync("downloadFileFromStream", "/Anty.docx", streamRef);
+
+        }catch(Exception easd)
+        {
+            Console.Write(easd);
+        }
+
+
+
+    }
+
+
+    private Stream GetFileStream()
+    {
+        return File.OpenRead("/Anty.docx");
+    }
+
+    T[] InitializeArray<T>(int length) where T : new()
+    {
+        T[] array = new T[length];
+        for (int i = 0; i < length; ++i)
+        {
+            array[i] = new T();
+        }
+
+        return array;
+    }
+    
+    protected int Test1(string dotestu, string fraza)
+    {
+        string[] tabela = fraza.Split(" ");
+        for (int o = 0; o + 5 < tabela.Length; o++)
+        {
+            string slowa = tabela[o] + " " + tabela[o + 1] + " " + tabela[o + 2] + " " + tabela[o + 3] + " " + tabela[o + 4];
+            if (dotestu.ToUpper().Contains(slowa.ToUpper()))
+            {
+                return 1;
+            }
+        }
+        return 0;
+    }
+    public int Test2(string dotestu, string fraza)
+    {
+        try
+        {
+            using (WebClient client = new WebClient())
+            {
+                HTMLcode = client.DownloadString(dotestu);
+                if (HTMLcode.ToUpper().Contains(fraza.ToUpper()))
+                {
+                    client.Dispose();
+                    return 1;
+                }
+                else
+                {
+                    client.Dispose();
+                    return 0;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Web Client ERROR " + e);
+            return 3;
+        }
+    }
+}

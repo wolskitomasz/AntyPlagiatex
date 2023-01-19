@@ -30,8 +30,8 @@ h2 {
     border-radius: 5px;
     font-size: 16px;
     font-weight: normal;
-    border:5px solid #03e9f4;
-    border-collapse:collapse;
+    border: 5px solid #03e9f4;
+    border-collapse: collapse;
     width: 100%;
     max-width: 100%;
     white-space: nowrap;
@@ -52,7 +52,6 @@ h2 {
         color: black;
         background: #03e9f4;
     }
-
 
         .fl-table thead th:nth-child(odd) {
             color: #ffffff;

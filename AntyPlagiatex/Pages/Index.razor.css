@@ -5,7 +5,6 @@
     font-family: sans-serif;
 }
 
-
 #slider {
     position: relative;
     width: 25%;
@@ -28,7 +27,6 @@ input[type=radio] {
     cursor: pointer;
 }
 
-
     input[type=radio]:nth-child(5) {
         margin-right: 0px;
     }
@@ -37,9 +35,6 @@ input[type=radio] {
         opacity: 1;
         accent-color: #03e9f4
     }
-
-
-
 
 #slider label,
 #slider label img {
@@ -59,8 +54,6 @@ input[type=radio] {
     transition: transform 400ms ease;
 }
 
-
-
 /* Slider Functionality */
 
 /* Active Slide */
@@ -73,8 +66,6 @@ input[type=radio] {
     transform: translate3d(0%, 0, 0px);
 }
 
-
-
 /* Next Slide */
 #s1:checked ~ #slide2,
 #s2:checked ~ #slide3,
@@ -84,7 +75,6 @@ input[type=radio] {
     box-shadow: 0 6px 10px rgba(0,0,0, 0.3), 0 2px 2px rgba(0,0,0, 0.2);
     transform: translate3d(20%, 0, -100px);
 }
-
 
 /* Next to Next Slide */
 #s1:checked ~ #slide3,
@@ -115,4 +105,3 @@ input[type=radio] {
     box-shadow: 0 6px 10px rgba(0,0,0, 0.3), 0 2px 2px rgba(0,0,0, 0.2);
     transform: translate3d(-20%, 0, -100px);
 }
-
