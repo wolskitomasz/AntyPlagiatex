@@ -56,12 +56,13 @@ else
         isLoading = true;
         loadedFiles.Clear();
         String str = "test";
+        long maxFileSize = 52428800;
 
         int z1 = 0;
         int z2 = 0;
 
         await using FileStream fs = new(rootpath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-        await e.GetMultipleFiles().FirstOrDefault().OpenReadStream().CopyToAsync(fs);
+        await e.GetMultipleFiles().FirstOrDefault().OpenReadStream(maxFileSize).CopyToAsync(fs);
 
         using (WordprocessingDocument document = WordprocessingDocument.Open(fs, false))
         {
@@ -108,12 +109,12 @@ else
                         z2 = 0;
 
                         JsonWynik jsonWynik = new JsonWynik();
-                        jsonWynik.zdanie = new JsonZdanie[paragraph.InnerText.Split(".").Count()];
+                        jsonWynik.zdanie = new JsonZdanie[paragraph.InnerText.Split(".").Count()+1];
                         jsonWynik.zdanie[z1] = new JsonZdanie();
-                        jsonWynik.zdanie[z1].items = new JsonDane[10];
+                        jsonWynik.zdanie[z1].items = new JsonDane[11];
                         jsonWynik.zdanie[z1].tekst = i;
                         String zdanie = i;
-                        if (zdanie.Count() > 10)
+                        if (zdanie.Count() > 20 && !zdanie.Contains(@"\"))
                         {
                             odpowiedz = await Http.GetStringAsync("https://customsearch.googleapis.com/customsearch/v1?cx=1726a2f7ed7c047a2&key=AIzaSyBZMpXzEDUikniwj6TiRqvPJUtXUmCrYKc&q=" + zdanie);
                             jsonAPI = System.Text.Json.JsonSerializer.Deserialize<Rootobject>(odpowiedz);
@@ -127,9 +128,9 @@ else
                                 jsonWynik.zdanie[z1].items[z2].test1 = Test1(zApi.snippet, zdanie);
                                 //jsonWynik.zdanie[z1].items[z2].test2 = Test2(zApi.link, zdanie);
                                 z2++;
-                                if (jsonWynik.zdanie[z1].items[z2 - 1].test1 == 1)
+                                if (jsonWynik.zdanie[z1].items[z2 - 1].test1.Count() > 5)
                                 {
-                                    Paragraph comtext = new Paragraph(new Run(new Text(jsonWynik.zdanie[z1].tekst +" : "+ jsonWynik.zdanie[z1].items[z2-1].link)));
+                                    Paragraph comtext = new Paragraph(new Run(new Text(jsonWynik.zdanie[z1].items[z2-1].test1 +" : "+ jsonWynik.zdanie[z1].items[z2-1].link)));
                                     Comment cmt = new Comment()
                                         {
                                             Id = id,
@@ -200,7 +201,7 @@ else
         return array;
     }
     
-    protected int Test1(string dotestu, string fraza)
+    protected string Test1(string dotestu, string fraza)
     {
         string[] tabela = fraza.Split(" ");
         for (int o = 0; o + 5 < tabela.Length; o++)
@@ -208,10 +209,10 @@ else
             string slowa = tabela[o] + " " + tabela[o + 1] + " " + tabela[o + 2] + " " + tabela[o + 3] + " " + tabela[o + 4];
             if (dotestu.ToUpper().Contains(slowa.ToUpper()))
             {
-                return 1;
+                return slowa.ToString();
             }
         }
-        return 0;
+        return "emp";
     }
     public int Test2(string dotestu, string fraza)
     {

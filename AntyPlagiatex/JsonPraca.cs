@@ -23,7 +23,7 @@ namespace AntyPlagiatex
         public string title { get; set; }
         public string link { get; set; }
         public string snippet { get; set; }
-        public int test1 { get; set; }
+        public string test1 { get; set; }
         public int test2 { get; set; }
     }
 
